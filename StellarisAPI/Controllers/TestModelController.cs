@@ -1,30 +1,27 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using StellarisAPI.Models;
+using StellarisAPI.Services;
 
 namespace StellarisAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class TestController : ControllerBase
+    public class TestController(DatabaseContext db) : ControllerBase 
     {
-        private static List<TestModel> testList = new List<TestModel>(new[]
-        {
-            new TestModel() { Id = 0, Name = "Test 0" },
-            new TestModel() { Id = 1, Name = "Test 1" },
-            new TestModel() { Id = 2, Name = "Test 2" }
-        });
+        
         [HttpGet]
-        public IActionResult getTests() => Ok(testList);
+        public IActionResult getTests() => Ok(db.testModels);
         [HttpGet("count")]
-        public IActionResult getCountTests() => Ok(testList.Count);
+        public IActionResult getCountTests() => Ok(db.testModels.Count());
 
         [HttpGet("{id}")]
         public IActionResult getTest(int id)
         {
 
-            var test = testList.SingleOrDefault(a => a.Id == id);
-            if (test == null)
+            var test = db.testModels.Where(result => result.Id == id);
+            if (test.Count()==0)
             {
                 return NotFound();
             }
@@ -33,12 +30,11 @@ namespace StellarisAPI.Controllers
         [HttpDelete("{id}")]
         public IActionResult deleteTest(int id)
         {
-            var test = testList.SingleOrDefault(a => a.Id == id);
-            if (test == null)
+            var test = db.testModels.Where(result => result.Id == id).ExecuteDelete();
+            if (test == 0)
             {
                 return NotFound();
             }
-            testList.Remove(test);
             return Ok();
         }
         // если есть какая-то форма
@@ -49,8 +45,8 @@ namespace StellarisAPI.Controllers
             {
                 return BadRequest(ModelState);
             }
-            test.Id = testList.Count;
-            testList.Add(test);
+            db.testModels.Add(test);
+            db.SaveChanges();
             return CreatedAtAction(nameof(getTest), new { id = test.Id }, test);
         }
         // если json формат
@@ -64,12 +60,13 @@ namespace StellarisAPI.Controllers
             {
                 return BadRequest(ModelState);
             }
-            var editedTest = testList.SingleOrDefault(a => a.Id == test.Id);
-            if (editedTest == null)
+            var editedTest = db.testModels.Where(result => result.Id == test.Id);
+            if (editedTest.Count() == 0)
             {
                 return NotFound();
             }
-            editedTest.Name = test.Name;
+            editedTest.First().Name = test.Name;
+            db.SaveChanges();
             return Ok(editedTest);
         }
         // если json формат

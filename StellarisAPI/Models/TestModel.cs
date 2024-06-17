@@ -5,6 +5,7 @@ namespace StellarisAPI.Models;
 
 public class TestModel
 {
+    [Key]
     public int Id { get; set; }
 
     [Required]

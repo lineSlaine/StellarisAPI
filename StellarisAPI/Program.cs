@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using StellarisAPI.Services;
 
@@ -5,10 +6,11 @@ namespace StellarisAPI
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static void Main(string[] args) => MainAsync(args);
+        public static void MainAsync(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
+            IConfiguration configuration = builder.Configuration;
             Log.Logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger();
 
             builder.Services.AddLogging(x => x.ClearProviders().AddSerilog());
@@ -16,7 +18,10 @@ namespace StellarisAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            //builder.Services.AddSingleton<DatabaseContext>();
+
+            builder.Services.AddDbContext<DatabaseContext>(options =>
+                options.UseSqlite(configuration["Database:DatabaseData"]));
+           
 
             var app = builder.Build();
 
@@ -31,7 +36,6 @@ namespace StellarisAPI
 
             try
             {
-                //app.Services.GetRequiredService<DatabaseContext>();
                 app.Run();
             }
             catch (Exception ex) 
